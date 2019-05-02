@@ -1,6 +1,6 @@
 ﻿namespace WinForm_DataInput
 {
-    partial class Form1
+    partial class PassportForm
     {
         /// <summary>
         /// Required designer variable.

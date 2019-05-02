@@ -11,10 +11,10 @@ namespace WinForm_DataInput.Model
 {
     public class DataManager
     {
+        private static string strConn = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
+
         public static bool Save(Passport passport)
         {
-            string strConn = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
-
             using (SqlConnection conn = new SqlConnection(strConn))
             {
                 conn.Open();
@@ -34,12 +34,12 @@ namespace WinForm_DataInput.Model
                 {
                     cmd.Parameters.Add(new SqlParameter("@Nationality", SqlDbType.NVarChar)).Value = passport.Nationality;
                 }
-                
+
                 cmd.Parameters.AddWithValue("@DOB", passport.DOB);
 
                 var passportImage = new SqlParameter("@Picture", SqlDbType.VarBinary, -1);
 
-                if(passport.Picture == null)
+                if (passport.Picture == null)
                 {
                     passportImage.Value = DBNull.Value;
                 }
@@ -56,6 +56,70 @@ namespace WinForm_DataInput.Model
 
                 return false;
             };
+        }
+
+        public static DataSet GetPassportData()
+        {
+            using (SqlConnection conn = new SqlConnection(strConn))
+            {
+                string sql = "SELECT * FROM Passport";
+
+                conn.Open();
+
+                var adapter = new SqlDataAdapter(sql, conn);
+                var ds = new DataSet();
+
+                adapter.Fill(ds);
+
+                return ds;
+            }
+        }
+
+        public static bool Update(Passport passport)
+        {
+            using(SqlConnection conn = new SqlConnection(strConn))
+            {
+                conn.Open();
+                var cmd = new SqlCommand();
+                cmd.Connection = conn;
+                cmd.CommandText = $"UPDATE Passport " +
+                                  $"SET LastName=@LastName, FirstName=@FirstName, Nationality=@Nationality, DOB=@DOB, Picture=@Picture " +
+                                  $"WHERE PassportNo=@PassportNo";
+
+                cmd.Parameters.Add(new SqlParameter("@LastName", SqlDbType.NVarChar, 10)).Value = passport.LastName;
+                cmd.Parameters.Add(new SqlParameter("@FirstName", SqlDbType.NVarChar, 10)).Value = passport.FirstName;
+
+                if (String.IsNullOrEmpty(passport.Nationality))
+                {
+                    cmd.Parameters.AddWithValue("@Nationality", DBNull.Value);
+                }
+                else
+                {
+                    cmd.Parameters.Add(new SqlParameter("@Nationality", SqlDbType.NVarChar, 50)).Value = passport.Nationality;
+                }
+
+                cmd.Parameters.AddWithValue("@DOB", passport.DOB);
+
+                SqlParameter passportImage = new SqlParameter("@Picture", SqlDbType.VarBinary, -1);
+                if (passport.Picture != null)
+                {
+                    passportImage.Value = passport.Picture;
+                }
+                else
+                {
+                    passportImage.Value = DBNull.Value;
+                }
+                cmd.Parameters.Add(passportImage);
+
+                // WHERE, @PassportNo
+                cmd.Parameters.AddWithValue("@PassportNo", passport.PassportNo);
+
+                if (cmd.ExecuteNonQuery() == 1)
+                {
+                    return true;
+                }
+                return false;
+            }
         }
     }
 }
